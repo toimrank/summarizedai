@@ -1,0 +1,9 @@
+{
+    "name": "Mike",
+    "age": 28,
+    "skills": [
+        "Python",
+        "Streamlit",
+        "Langchain"
+    ]
+}
