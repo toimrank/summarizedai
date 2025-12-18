@@ -1,0 +1,56 @@
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+from langchain.tools import tool, ToolRuntime
+from dataclasses import dataclass
+
+USER_DATABASE = {
+    "user1": {
+        "name": "Mike",
+        "account_type": "Premium",
+        "balance": 2000,
+        "email": "mike@test.com"
+    },
+    "user2": {
+        "name": "Jack",
+        "account_type": "Standard",
+        "balance": 3200,
+        "email": "jack@test.com"
+    }
+}
+
+@dataclass
+class UserContext:
+    user_id: str
+
+@tool
+def get_account_info(runtime: ToolRuntime[UserContext]) -> str:
+    """Get the current user's account information."""    
+    user_id = runtime.context.user_id
+    if user_id in USER_DATABASE:
+        user = USER_DATABASE[user_id]
+        return(
+            f"Acount Holder: {user['name']}\n"
+            f"Type {user['account_type']}\n"
+            f"Balance {user['balance']}\n"
+        )
+    return "User Not Found"
+
+model = ChatOpenAI(model="gpt-4o", api_key="<API_KEY>")
+
+agent = create_agent(
+    model,
+    tools=[get_account_info],
+    context_schema=UserContext,
+    system_prompt="You are a financial assistant."
+)
+
+result = agent.invoke(
+    {
+        "messages" : [{"role" : "user", "content" : "What's my current balance amd the name of account holder?"}]
+    },
+    context=UserContext(user_id="user1")
+)
+
+messages = result["messages"]
+
+print(messages[3].content)
