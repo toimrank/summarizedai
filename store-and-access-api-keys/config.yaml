@@ -1,0 +1,5 @@
+openai:
+  api_key: "<API_KEY>"
+
+anthropic:
+  auth_token: "sk-your-anthropic-auth-token-here"
