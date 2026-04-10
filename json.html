@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JSON Tree Modal – Arrays Checkbox</title>
+  <style>
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      max-height: 80vh;
+      width: 450px;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
+    #tree { flex-grow: 1; overflow-y: auto; margin-bottom: 15px; border: 1px solid #f0f0f0; padding: 10px; }
+    .modal-footer { text-align: right; }
+    button { padding: 8px 16px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; background: #fff; }
+    #okBtn { background: #007bff; color: white; border-color: #007bff; margin-left: 8px; }
+
+    ul { list-style-type: none; padding-left: 20px; margin: 5px 0; }
+    li { margin: 6px 0; font-family: sans-serif; font-size: 14px; }
+    .nested { display: none; }
+    .active { display: block; }
+    .toggle { cursor: pointer; font-weight: bold; color: #333; }
+    .toggle:hover { color: #007bff; }
+    .object::before { content: "📁 "; font-size: 12px; }
+    .array::before { content: "📚 "; font-size: 12px; }
+    input[type="checkbox"] { margin-right: 8px; vertical-align: middle; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<h3>JSON Tree Selection</h3>
+<button id="openModal">Select Node</button>
+<p><strong>Selected Path:</strong> <code id="selectedValue" style="background: #eee; padding: 2px 5px;">None</code></p>
+
+<script>
+const data = {
+  user: {
+    name: "Imran",
+    address: { city: "New York", zip: 10001 }
+  },
+  skills: ["Java", "AEM"],
+  active: true,
+  settings: {
+    notifications: "enabled",
+    theme: "dark"
+  }
+};
+
+let currentlySelected = null;
+let selectedPath = "";
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  // Inject Modal
+  const modalHTML = `
+    <div id="treeModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">Select a Key</div>
+        <div id="tree"></div>
+        <div class="modal-footer">
+          <button id="cancelBtn">Cancel</button>
+          <button id="okBtn">Apply Selection</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  const modal = document.getElementById("treeModal");
+  const treeContainer = document.getElementById("tree");
+  const openBtn = document.getElementById("openModal");
+  const cancelBtn = document.getElementById("cancelBtn");
+  const okBtn = document.getElementById("okBtn");
+  const displaySpan = document.getElementById("selectedValue");
+
+  function createTree(obj, parentPath = "") {
+    const ul = document.createElement("ul");
+
+    for (let key in obj) {
+      const li = document.createElement("li");
+      const value = obj[key];
+      const isObject = typeof value === "object" && value !== null;
+      const currentPath = parentPath ? `${parentPath}/${key}` : key;
+
+      if (isObject) {
+        // Array → checkbox + expandable
+        if (Array.isArray(value)) {
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.onclick = () => handleSelection(currentPath, checkbox);
+
+          const span = document.createElement("span");
+          span.textContent = key;
+          span.classList.add("toggle", "array");
+
+          const childTree = document.createElement("ul"); // array items not shown
+          childTree.classList.add("nested");
+
+          span.onclick = () => {
+            childTree.classList.toggle("active");
+            span.classList.toggle("open");
+          };
+
+          li.appendChild(checkbox);
+          li.appendChild(span);
+          li.appendChild(childTree);
+        } 
+        // Object → expandable only
+        else {
+          const span = document.createElement("span");
+          span.textContent = key;
+          span.classList.add("toggle", "object");
+
+          const childTree = createTree(value, currentPath);
+          childTree.classList.add("nested");
+
+          span.onclick = () => {
+            childTree.classList.toggle("active");
+            span.classList.toggle("open");
+          };
+
+          li.appendChild(span);
+          li.appendChild(childTree);
+        }
+      } else {
+        // Leaf → checkbox
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.onclick = () => handleSelection(currentPath, checkbox);
+
+        const label = document.createElement("span");
+        label.textContent = " " + key;
+
+        li.appendChild(checkbox);
+        li.appendChild(label);
+      }
+
+      ul.appendChild(li);
+    }
+
+    return ul;
+  }
+
+  function handleSelection(path, checkbox) {
+    if (currentlySelected && currentlySelected !== checkbox) {
+      currentlySelected.checked = false;
+    }
+    if (checkbox.checked) {
+      currentlySelected = checkbox;
+      selectedPath = path;
+    } else {
+      currentlySelected = null;
+      selectedPath = "";
+    }
+  }
+
+  treeContainer.appendChild(createTree(data));
+
+  openBtn.onclick = () => modal.style.display = "flex";
+  cancelBtn.onclick = () => modal.style.display = "none";
+  okBtn.onclick = () => {
+    displaySpan.textContent = selectedPath || "None";
+    modal.style.display = "none";
+  };
+
+  window.onclick = (event) => {
+    if (event.target === modal) modal.style.display = "none";
+  };
+
+});
+</script>
+
+</body>
+</html>
